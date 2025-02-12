@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Vendors</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script type="text/javascript" th:src="@{/js/script.js}"></script>
+  <style>
+    /* General Reset */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #1a1a1a, #000000);
+      color: #ffffff;
+      padding: 20px;
+    }
+
+    h2, h3 {
+      color: #ffffff;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    h2 {
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+    }
+
+    h3 {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    form {
+      background: #1e1e1e;
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      margin-bottom: 2rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      color: #b0b0b0;
+      margin-bottom: 0.5rem;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      font-size: 14px;
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+      margin-bottom: 1rem;
+    }
+
+    input[type="text"]:focus,
+    input[type="email"]:focus,
+    input[type="tel"]:focus {
+      border-color: #007bff;
+      background: rgba(255, 255, 255, 0.15);
+      outline: none;
+      box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+    }
+
+    button[type="submit"] {
+      padding: 10px 20px;
+      background: linear-gradient(135deg, #007bff, #0056b3);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);
+    }
+
+    button[type="submit"]:hover {
+      background: linear-gradient(135deg, #0056b3, #003d80);
+      box-shadow: 0 6px 20px rgba(0, 123, 255, 0.6);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #1e1e1e;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    th {
+      background: rgba(255, 255, 255, 0.05);
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    td {
+      color: #b0b0b0;
+    }
+
+    .delete-btn {
+      background: linear-gradient(135deg, #ff4d4d, #cc0000);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(255, 77, 77, 0.4);
+    }
+
+    .delete-btn:hover {
+      background: linear-gradient(135deg, #cc0000, #990000);
+      box-shadow: 0 6px 20px rgba(255, 77, 77, 0.6);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      form {
+        padding: 1rem;
+      }
+
+      h2 {
+        font-size: 22px;
+      }
+
+      h3 {
+        font-size: 20px;
+      }
+
+      table {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+<h2>Vendor Management</h2>
+
+<!-- Add Vendor Form -->
+<h3>Add Vendor</h3>
+<form th:action="@{/vendor/add}" method="post">
+  <label>Name:</label>
+  <input type="text" name="name" required>
+  <label>Email:</label>
+  <input type="email" name="email" required>
+  <label>Phone:</label>
+  <input type="text" name="phone" required>
+  <button type="submit">Add Vendor</button>
+</form>
+
+<!-- Update Vendor Form -->
+<h3>Update Vendor</h3>
+<form th:action="@{/vendor/update}" method="post">
+  <label>ID:</label>
+  <input type="text" name="id" required>
+  <label>Name:</label>
+  <input type="text" name="name">
+  <label>Email:</label>
+  <input type="email" name="email">
+  <label>Phone:</label>
+  <input type="text" name="phone">
+  <button type="submit">Update Vendor</button>
+</form>
+
+<!-- List of Vendors with Delete Button -->
+<h3>Vendors</h3>
+<table>
+  <tr>
+    <th>ID</th>
+    <th>Name</th>
+    <th>Email</th>
+    <th>Phone</th>
+    <th>Actions</th>
+  </tr>
+  <tr th:each="vendor : ${vendors}">
+    <td th:text="${vendor.id}"></td>
+    <td th:text="${vendor.name}"></td>
+    <td th:text="${vendor.email}"></td>
+    <td th:text="${vendor.phoneNumber}"></td>
+    <td>
+      <form th:action="@{/vendor/delete/{id}(id=${vendor.id})}" method="post" onsubmit="return confirm('Are you sure?');">
+        <input type="hidden" name="_method" value="delete" />
+        <button type="submit" class="delete-btn">Delete Vendor</button>
+      </form>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

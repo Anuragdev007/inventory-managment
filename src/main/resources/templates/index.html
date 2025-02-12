@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Inventory Management System</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <!-- Font Awesome -->
+    <link
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+            rel="stylesheet"
+    />
+    <!-- Google Fonts -->
+    <link
+            href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap"
+            rel="stylesheet"
+    />
+    <!-- MDB -->
+    <link
+            href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/8.1.0/mdb.min.css"
+            rel="stylesheet"
+    />
+
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div id="loading-spinner" class="spinner-overlay" style="display: none">
+    <div class="spinner"></div>
+</div>
+
+<section class="mb-4">
+    <div class="card">
+        <div class="card-header text-center py-3">
+            <div
+                    style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+            "
+            >
+                <div>
+                    <h5 class="mb-0 text-center">
+                        <strong>Inventory</strong>
+                    </h5>
+                </div>
+
+                <div class="d-flex">
+                    <a
+                            class="btn btn-outline-secondary"
+                            data-mdb-ripple-init
+                            th:href="@{/products/new}"
+                            role="button"
+                            style="margin-right: 6px"
+                    >
+                        <i class="fa-solid fa-plus me-2"></i>
+                        Add New Product
+                    </a>
+                    <form
+                            id="import-form"
+                            th:action="@{/import}"
+                            method="post"
+                            enctype="multipart/form-data"
+                    >
+                        <input
+                                type="file"
+                                id="file"
+                                name="file"
+                                accept=".xls,.xlsx,.csv"
+                                required
+                                style="display: none"
+                        />
+                        <button type="button" class="btn btn-dark" id="import-button">
+                            Import
+                        </button>
+                    </form>
+                    <div
+                            id="import-feedback"
+                            th:if="${importMessage}"
+                            class="feedback-message"
+                            th:text="${importMessage}"
+                    ></div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+
+            <div class="container mt-3">
+                <div class="row justify-content-center align-items-center">
+                    <!-- Filter Section -->
+                    <div class="col-2">
+                        <div class="filter-container mb-4">
+                            <button class="filter-button w-100" onclick="toggleDropdown()">Filter Options</button>
+                            <div class="filter-dropdown" id="filterDropdown">
+                                <a href="?page=0&size=10&sortBy=name&sortDir=asc">Sort by Name (A-Z)</a>
+                                <a href="?page=0&size=10&sortBy=name&sortDir=desc">Sort by Name (Z-A)</a>
+                                <a href="?page=0&size=10&sortBy=sku&sortDir=asc">Sort by SKU (A-Z)</a>
+                                <a href="?page=0&size=10&sortBy=sku&sortDir=desc">Sort by SKU (Z-A)</a>
+                                <a href="?page=0&size=10&sortBy=quantity&sortDir=asc">Sort by Quantity (Lowest)</a>
+                                <a href="?page=0&size=10&sortBy=quantity&sortDir=desc">Sort by Quantity (Highest)</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Search Bar Section -->
+                    <div class="col-6">
+                        <form>
+                            <div class="input-group mb-4 border rounded-pill p-1">
+                                <input type="search" id="search-input" placeholder="Search by SKU or Name"
+                                       autocomplete="off" class="form-control bg-none border-0"/>
+                                <div class="input-group-append border-0">
+                                    <button id="search-btn" type="button" class="btn btn-link text-success">
+                                        <i class="fa fa-search"></i>
+                                    </button>
+                                </div>
+                                <div id="suggestions" class="suggestion-box"></div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+
+
+
+                <!-- Bulk Delete Button -->
+                <div
+                        id="bulk-delete-container"
+                        style="display: none; position: fixed; bottom: 20px; right: 20px"
+                >
+                    <button id="bulk-delete-btn" class="btn btn-danger">
+                        Delete Selected
+                    </button>
+                </div>
+
+                <table class="table table-hover text-nowrap" id="productTable">
+                    <thead>
+                    <tr>
+                        <th>
+                            <input type="checkbox" id="select-all" />
+                            <!-- "Select All" Checkbox -->
+                        </th>
+                        <th scope="col">Image</th>
+                        <th scope="col">Product Name</th>
+                        <th scope="col">SKU</th>
+                        <th scope="col">Quantity</th>
+                        <th scope="col">Threshold</th>
+                        <th scope="col">Vendor</th>
+
+                        <th scope="col">Action</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr
+                            th:each="product : ${productPage}"
+                            th:data-id="${product.id}"
+                    >
+                        <td>
+                            <input
+                                    type="checkbox"
+                                    class="row-checkbox"
+                                    th:value="${product.id}"
+                            />
+                        </td>
+                        <td>
+                            <img
+                                    class="img-fluid rounded"
+                                    th:src="'/uploads/images/' + ${product.image}"
+                                    alt="Product Image"
+                                    width="50"
+                            />
+                        </td>
+                        <td>
+                    <span
+                            class="product-title"
+                            th:text="${product.name}"
+                            id="name-[[${product.id}]]"
+                    ></span>
+                            <span
+                                    class="Polaris-Tag"
+                                    th:text="${product.size}"
+                                    id="size-[[${product.id}]]"
+                            ></span>
+                        </td>
+                        <td>
+                    <span
+                            th:text="${product.sku}"
+                            id="sku-[[${product.id}]]"
+                    ></span>
+                        </td>
+
+                        <td>
+                            <input
+                                    class="twoIn"
+                                    style="max-width: 10rem"
+                                    type="number"
+                                    th:value="${product.quantity}"
+                                    id="quantity-[[${product.id}]]"
+                            />
+                        </td>
+                        <td>
+                            <input
+                                    class="twoIn"
+                                    style="max-width: 10rem"
+                                    type="number"
+                                    th:value="${product.threshold}"
+                                    id="threshold-[[${product.id}]]"
+                            />
+                        </td>
+                        <td>
+                            <select id="vendor-[[${product.id}]]">
+                                <option
+                                        th:each="vendor : ${vendors}"
+                                        th:value="${vendor.id}"
+                                        th:text="${vendor.name}"
+                                        th:selected="${product.vendor.id == vendor.id}"
+                                ></option>
+                            </select>
+                        </td>
+
+                        <td>
+                            <button
+                                    class="update-btn btn-dark btn"
+                                    id="update"
+                                    th:data-id="${product.id}"
+                            >
+                                Update
+                            </button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+                <!--                 Products Pagination -->
+                <div class="sticky-pagination">
+                    <ul class="pagination justify-content-center">
+                        <!-- Previous Button -->
+                        <li
+                                th:classappend="${currentPage == 0} ? 'disabled'"
+                                class="page-item"
+                        >
+                            <a
+                                    class="page-link"
+                                    th:href="@{'/?page=' + (${currentPage - 1}) + '&size=' + ${productPage.size}}"
+                                    th:disabled="${currentPage == 0}"
+                            >Previous</a
+                            >
+                        </li>
+
+                        <!-- Next Button -->
+                        <li
+                                th:classappend="${currentPage == totalPages - 1} ? 'disabled'"
+                                class="page-item"
+                        >
+                            <a
+                                    class="page-link"
+                                    th:href="@{'/?page=' + (${currentPage + 1}) + '&size=' + ${productPage.size}}"
+                                    th:disabled="${currentPage == totalPages - 1}"
+                            >Next</a
+                            >
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+
+<script>
+    $(document).ready(function () {
+      const bulkDeleteContainer = $("#bulk-delete-container");
+      const bulkDeleteBtn = $("#bulk-delete-btn");
+
+      // Toggle bulk delete button visibility
+      const toggleBulkDeleteButton = () => {
+        const anySelected = $(".row-checkbox:checked").length > 0;
+        bulkDeleteContainer.toggle(anySelected);
+      };
+
+      // Handle "Select All" checkbox
+      $("#select-all").on("change", function () {
+        const isChecked = $(this).prop("checked");
+        $(".row-checkbox").prop("checked", isChecked);
+        $(".delete-btn").toggle(isChecked); // Show/hide delete buttons
+        toggleBulkDeleteButton();
+      });
+
+      // Handle individual checkboxes
+      $(".row-checkbox").on("change", function () {
+        const row = $(this).closest("tr");
+        const isChecked = $(this).prop("checked");
+        row.find(".delete-btn").toggle(isChecked); // Show/hide row delete button
+
+        const allChecked =
+          $(".row-checkbox").length === $(".row-checkbox:checked").length;
+        $("#select-all").prop("checked", allChecked); // Update "Select All" checkbox state
+        toggleBulkDeleteButton();
+      });
+
+      // Handle row click to toggle checkbox
+      $("#productTable tbody").on("click", "tr", function (e) {
+        // Prevent selection if clicking on specific inputs or buttons
+        if (
+          $(e.target).is(
+            'input[id^="quantity-"], input[id^="threshold-"], select[id^="vendor-"], button[id^="update"], .row-checkbox'
+          )
+        ) {
+          return; // Exit if the target is any of the excluded elements
+        }
+
+        let checkbox = $(this).find(".row-checkbox");
+        checkbox.prop("checked", !checkbox.prop("checked")); // Toggle the checkbox
+        toggleBulkDeleteButton(); // Update delete button visibility
+      });
+
+      // Handle bulk delete
+      bulkDeleteBtn.on("click", function () {
+        const selectedIds = $(".row-checkbox:checked")
+          .map(function () {
+            return $(this).val();
+          })
+          .get();
+
+        if (selectedIds.length > 0) {
+          if (
+            confirm("Are you sure you want to delete the selected products?")
+          ) {
+            $.ajax({
+              url: "/inventory/bulk-delete",
+              type: "POST",
+              contentType: "application/json",
+              data: JSON.stringify(selectedIds),
+              success: function () {
+                location.reload();
+              },
+              error: function (xhr) {
+                alert("Error deleting products: " + xhr.responseText);
+              },
+            });
+          }
+        }
+      });
+
+      // Handle individual delete button
+      $("#productTable").on("click", ".delete-btn", function (e) {
+        e.stopPropagation(); // Prevent triggering the row click event
+        const productId = $(this).data("id");
+
+        if (confirm("Are you sure you want to delete this product?")) {
+          $.ajax({
+            url: "/inventory/delete/" + productId,
+            type: "DELETE",
+            success: function () {
+              location.reload();
+            },
+            error: function (xhr) {
+              alert("Error deleting product: " + xhr.responseText);
+            },
+          });
+        }
+      });
+    });
+
+    function showSpinner() {
+      $("#loading-spinner").show();
+    }
+
+    function hideSpinner() {
+      $("#loading-spinner").hide();
+    }
+
+    $(document).ready(function () {
+      // Handle search input
+      $("#search-input").on("input", function () {
+        // Debounce function reduces unnecessary API calls
+        let query = $(this).val();
+
+        if (query.length > 0) {
+          $.ajax({
+            url: "/search/suggest",
+            data: { query: query },
+            success: function (data) {
+              $("#suggestions").empty();
+              if (data.length > 0) {
+                data.forEach(function (product) {
+                  $("#suggestions").append(
+                    '<div class="suggestion-item" data-id="' +
+                      product.id +
+                      '">' +
+                      product.name +
+                      " (" +
+                      product.sku +
+                      ")</div>"
+                  );
+                });
+                $("#suggestions").show();
+              } else {
+                $("#suggestions").hide();
+              }
+            },
+          });
+        } else {
+          $("#suggestions").hide();
+        }
+      });
+
+     // Handle Click on Suggestion
+    $("#suggestions").on("click", ".suggestion-item", function () {
+        const productId = $(this).data("id");  // Get the product ID from clicked suggestion
+        filterInventoryTable(productId);       // Call the filter function
+        $("#suggestions").hide();              // Hide the suggestions box
+        $("#search-input").val($(this).text()); // Set the input field value to clicked suggestion text
+    });
+
+    // Hide Suggestions When Clicking Outside
+    $(document).on("click", function (event) {
+        if (!$(event.target).closest("#search-input, #suggestions").length) {
+            $("#suggestions").hide();
+        }
+    });
+
+    // Filter Inventory Table Based on Product ID
+    function filterInventoryTable(productId) {
+        // Loop through each row and check if it matches the selected product ID
+        $("#productTable tbody tr").each(function () {
+            const row = $(this);
+            const rowId = row.data("id"); // Get the data-id attribute from each row
+            if (rowId == productId) {
+                row.show();  // Show row if it matches the productId
+            } else {
+                row.hide();  // Hide row if it doesn't match the productId
+            }
+        });
+    }
+      // Handle vendor delete button
+      $("#vendorTable").on("click", ".delete-vendor-btn", function () {
+        let vendorId = $(this).data("id");
+        $.ajax({
+          url: "/vendor/delete/" + vendorId,
+          type: "DELETE",
+          success: function () {
+            alert("Vendor deleted successfully");
+            location.reload();
+          },
+          error: function (xhr) {
+            alert("Error deleting vendor: " + xhr.responseText);
+          },
+        });
+      });
+
+      // Handle product update button
+      $("#productTable").on("click", ".update-btn", function () {
+        showSpinner();
+        let productId = $(this).data("id");
+        let productRow = $(this).closest("tr");
+        let updatedData = {
+          id: productId,
+          quantity: productRow.find('input[id^="quantity-"]').val(),
+          threshold: productRow.find('input[id^="threshold-"]').val(),
+          vendorId: productRow.find('select[id^="vendor-"]').val(),
+        };
+
+        // Make AJAX call to update the product
+        $.ajax({
+          url: "/inventory/update/" + productId,
+          type: "PUT",
+          contentType: "application/json",
+          data: JSON.stringify(updatedData),
+          success: function () {
+            location.reload();
+          },
+          error: function (xhr) {
+            alert("Error updating product: " + xhr.responseText);
+          },
+          complete: function () {
+            hideSpinner();
+          },
+        });
+      });
+
+      // Handle product delete button
+      $("#productTable").on("click", ".delete-btn", function () {
+        let productId = $(this).data("id");
+        $.ajax({
+          url: "/inventory/delete/" + productId,
+          type: "DELETE",
+          success: function () {
+            alert("Product deleted successfully");
+            location.reload();
+          },
+          error: function (xhr) {
+            alert("Error deleting product: " + xhr.responseText);
+          },
+        });
+      });
+
+      // Handle vendor form submission for adding a vendor
+      $("#update-vendor-form").on("submit", function (e) {
+        e.preventDefault();
+        let vendorData = {
+          id: $("#update-vendor-id").val(),
+          name: $("#updateVendorName").val(),
+          email: $("#updateVendorEmail").val(),
+          phoneNumber: $("#updateVendorPhone").val(),
+        };
+
+        $.ajax({
+          url: "/vendor/update" + vendorId,
+          type: "PUT",
+          contentType: "application/json",
+          data: JSON.stringify(vendorData),
+          success: function () {
+            alert("Vendor updated successfully");
+            location.reload();
+          },
+          error: function (xhr) {
+            alert("Error updating vendor: " + xhr.responseText);
+          },
+        });
+      });
+
+      // Handle cancel update for vendor
+      $("#cancel-update").on("click", function () {
+        $("#update-vendor-modal").hide();
+      });
+
+      // Show modal to update vendor when vendor row is clicked (you might want to add a button for this)
+      $("#vendorTable").on("click", "tr", function () {
+        let vendorId = $(this).data("id");
+        let vendorName = $(this).find("td").eq(0).text();
+        let vendorEmail = $(this).find("td").eq(1).text();
+        let vendorPhone = $(this).find("td").eq(2).text();
+
+        $("#update-vendor-id").val(vendorId);
+        $("#updateVendorName").val(vendorName);
+        $("#updateVendorEmail").val(vendorEmail);
+        $("#updateVendorPhone").val(vendorPhone);
+        $("#update-vendor-modal").show();
+      });
+    });
+
+    document
+      .getElementById("import-form")
+      .addEventListener("submit", function () {
+        const feedbackDiv = document.getElementById("import-feedback");
+        feedbackDiv.textContent = "Importing...";
+        feedbackDiv.style.backgroundColor = "#2196F3"; // Blue for loading
+      });
+    document
+      .getElementById("import-button")
+      .addEventListener("click", function () {
+        document.getElementById("file").click();
+      });
+
+    document.getElementById("file").addEventListener("change", function () {
+      showSpinner(); // Show spinner before the operation starts
+      if (this.files.length > 0) {
+        const form = document.getElementById("import-form");
+        const formData = new FormData(form);
+
+        // AJAX request for file upload
+        $.ajax({
+          url: form.action,
+          type: "POST",
+          data: formData,
+          processData: false,
+          contentType: false,
+          success: function () {
+            alert("File imported successfully!");
+            location.reload(); // Reload the page to display the new data
+          },
+          error: function () {
+            alert("An error occurred during file import.");
+          },
+          complete: function () {
+            hideSpinner(); // Hide spinner after the operation is complete
+          },
+        });
+      }
+    });
+
+     // Function to toggle the dropdown visibility
+        function toggleDropdown() {
+            const dropdown = document.getElementById("filterDropdown");
+            dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+        }
+
+        // Hide dropdown when clicking outside
+        window.onclick = function (event) {
+            if (!event.target.matches('.filter-button')) {
+                const dropdown = document.getElementById("filterDropdown");
+                if (dropdown.style.display === "block") {
+                    dropdown.style.display = "none";
+                }
+            }
+        };
+
+    document.addEventListener("DOMContentLoaded", function () {
+    const searchInput = document.getElementById("search-input");
+    const searchButton = document.getElementById("search-btn");
+
+    searchInput.addEventListener("input", function () {
+        if (searchInput.value.trim() === "") {
+            // If the input is cleared, go back to the first page
+            window.location.href = "?page=0";
+        }
+    });
+
+    searchButton.addEventListener("click", function () {
+        const query = searchInput.value.trim();
+        if (query !== "") {
+            window.location.href = `/search/suggest?query=${query}`;
+            
+});
+
+
+</script>
+
+<script
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+        crossorigin="anonymous"
+></script>
+</body>
+</html>
